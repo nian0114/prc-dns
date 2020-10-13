@@ -7,7 +7,7 @@ import datetime
 import traceback
 import threading
 # import socket
-import SocketServer
+import socketserver
 import logging
 import argparse
 from enum import Enum
@@ -16,7 +16,7 @@ import random
 import urllib
 import json
 from IPy import IP
-from urlparse import urlparse
+from urllib.parse import urlparse
 import re
 import white_domain
 from myrequests import requests_retry_session
@@ -291,7 +291,7 @@ def dns_response(data):
     return dns_reply.pack()
 
 
-class MyBaseRequestHandler(SocketServer.BaseRequestHandler):
+class MyBaseRequestHandler(socketserver.BaseRequestHandler):
     def get_data(self):
         raise NotImplementedError
 
@@ -332,11 +332,11 @@ class UdpRequestHandler(MyBaseRequestHandler):
         return self.request[1].sendto(data, self.client_address)
 
 
-class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
+class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     pass
 
 
-class ThreadedUDPServer(SocketServer.ThreadingMixIn, SocketServer.UDPServer):
+class ThreadedUDPServer(socketserver.ThreadingMixIn, socketserver.UDPServer):
     pass
 
 
