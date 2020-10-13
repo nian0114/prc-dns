@@ -18,9 +18,32 @@ import json
 from IPy import IP
 from urllib.parse import urlparse
 import re
-import white_domain
-from myrequests import requests_retry_session
 
+import requests
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
+
+
+def requests_retry_session(retries=3,
+                           backoff_factor=0.3,
+                           status_forcelist=(500, 502, 504),
+                           session=None,
+                           ):
+    session = session or requests.Session()
+    retry = Retry(
+        total=retries,
+        read=retries,
+        connect=retries,
+        backoff_factor=backoff_factor,
+        status_forcelist=status_forcelist,
+    )
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount('http://', adapter)
+    session.mount('https://', adapter)
+    return session
+
+white_domain_dict = {
+}
 
 class LogLevel(Enum):
     debug = 'DEBUG'
@@ -50,7 +73,6 @@ class IpVersion(Enum):
         return self.value
 
 
-white_domain_dict = white_domain.white_domain_dict
 dns_servers_in_prc = None
 dns4_servers_in_prc = ['tcp/114.114.114.114/53', 'tcp/114.114.115.115/53', ]
 dns6_servers_in_prc = ['tcp/240c::6666/53', 'tcp/240c::6644/53', ]
