@@ -119,21 +119,12 @@ def query_over_http(qn, qt):
     if args.myip is not None:
         myip = args.myip
     try:
-        if args.proxy is None:
-            name = urllib.quote(base64.b64encode(qn))
-            t = urllib.quote(base64.b64encode(qt))
-            ecs = urllib.quote(base64.b64encode(myip))
-            r = requests_retry_session().get(url=args.server,
-                                             params={'name': name, 'type': t, 'edns_client_subnet': ecs},
-                                             headers={'User-Agent': ua_format.format(random.randint(1, 9999))},
-                                             timeout=(3.05, 27))
-            resp = base64.b64decode(r.text)
-        else:
-            r = requests_retry_session().get(url=args.server,
-                                             params={'name': qn, 'type': qt, 'edns_client_subnet': myip},
-                                             headers={'User-Agent': ua_format.format(random.randint(1, 9999))},
-                                             proxies={'http': args.proxy, 'https': args.proxy}, timeout=(3.05, 27))
-            resp = r.text
+        r = requests_retry_session().get(url=args.server,
+                                         params={'name': qn, 'type': qt, 'edns_client_subnet': myip},
+                                         headers={'User-Agent': ua_format.format(random.randint(1, 9999))},
+                                         proxies={'http': args.proxy, 'https': args.proxy})
+        resp = r.text
+        print(resp)
         logging.info('Query DNS over http, url: %s', r.url)
         logging.debug('Query DNS over http, response: %s', resp)
         logging.debug("query_over_http executed --- %s seconds ---" % (time.time() - start_time))
@@ -435,26 +426,10 @@ def get_arg():
             cn6_ss.append(cn6_s)
         args.cn6 = cn6_ss
 
-    if args.proxy is None:
-        if args.server is None:
-            args.server = server
-        parsed_uri = urlparse(args.server)
-        args.server_domain = parsed_uri.hostname
-        args.server_key_4 = parsed_uri.hostname + '.@A'
-        args.server_key_6 = parsed_uri.hostname + '.@AAAA'
-        args.server_cache = {
-            args.server_key_4: {'rdata': None, },
-            args.server_key_6: {'rdata': None, },
-        }
-        # root_domain = get_root_domain(parsed_uri.hostname)
-        # if root_domain:
-        #     white_domain_dict[root_domain] = 1
-        # else:
-        #     raise Exception('Can not get Root Domain of ' + parsed_uri.hostname)
-    else:
-        args.server_cache = None
-        args.proxy = 'socks5:{0}'.format(args.proxy)
-        args.server = 'https://dns.google.com/resolve'
+
+    args.server_cache = None
+    args.proxy = 'socks5:{0}'.format(args.proxy)
+    args.server = 'https://dns.google.com/resolve'
 
     # read prc_domain
     if os.path.exists(os.path.abspath(args.prc_domain)):
@@ -510,7 +485,8 @@ def main():
 
     # DNS服务器启动后，开始解析自身依赖域名
     if args.myip is None:
-        resp = requests_retry_session().get(args.server, timeout=(3.05, 27))
+        resp = requests_retry_session().get(args.server, timeout=(3.05, 27),
+                                         proxies={'http': args.proxy, 'https': args.proxy})
         myip_data = resp.json()
         args.myip = myip_data['origin']
         logging.info('your public IP is %s', args.myip)
